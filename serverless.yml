@@ -9,12 +9,14 @@ provider:
         ENVIRONMENT: "${self:provider.stage}"
     deploymentBucket:
         name: "memes-services-${self:provider.stage}"
+        serverSideEncryption: AES256
 
 plugins:
     - serverless-plugin-typescript
     - serverless-offline
     - serverless-plugin-include-dependencies
     - serverless-aws-documentation
+    - serverless-deployment-bucket
 package:
     excludeDevDependencies: true
 custom:
