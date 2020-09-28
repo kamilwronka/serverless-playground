@@ -1,11 +1,23 @@
 import { DynamoDB, config } from "aws-sdk";
+import { isEmpty, get } from "lodash";
 
 export function handler(event, context, callback) {
   const dynamoClient = new DynamoDB.DocumentClient();
+
+  let lastItem = get(event, "queryStringParameters.lastItem", null);
+  let limit = get(event, "queryStringParameters.limit", "12");
+
   const params = {
     TableName: "memes",
     Select: "ALL_ATTRIBUTES",
+    Limit: limit,
   };
+
+  if (lastItem) {
+    params["ExclusiveStartKey"] = { id: lastItem };
+  }
+
+  console.log(params);
 
   dynamoClient.scan(params, function (err, data) {
     if (err) {

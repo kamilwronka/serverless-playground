@@ -1,174 +1,170 @@
 service: memes
 
-# You can pin your service to only deploy with a specific Serverless version
-# Check out our docs for more details
 frameworkVersion: "2"
 
 provider:
-  name: aws
-  runtime: nodejs12.x
-  stage: dev
-  region: eu-central-1
+    name: aws
+    runtime: nodejs12.x
+    stage: ${env:STAGE}
+	region: eu-central-1
+	environment:
+		ENVIRONMENT: ${self:provider.stage}
+
 
 plugins:
-  - serverless-plugin-typescript
-  - serverless-offline
-  - serverless-plugin-include-dependencies
+    - serverless-plugin-typescript
+    - serverless-offline
+    - serverless-plugin-include-dependencies
+    - serverless-aws-documentation
 
 package:
-  excludeDevDependencies: true
+    excludeDevDependencies: true
 
 custom:
-  serverless-offline:
-    httpPort: 4000
+    serverless-offline:
+        httpPort: 4000
 
 functions:
-  test:
-    handler: ./src/test/handler.hello
-    #    The following are a few example events you can configure
-    #    NOTE: Please make sure to change your handler code to work with those events
-    #    Check the event documentation for details
-    events:
-      - http:
-          path: test
-          method: get
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-            allowCredencials: true
-          authorizer:
-            name: authorizer
-            arn: top-secret
-            identitySource: method.request.header.Authorization
-  getMemes:
-    handler: ./src/memes/get.handler
-    role: MainRole
-    events:
-      - http:
-          path: memes
-          method: get
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-            allowCredencials: true
-  getPresignedUrl:
-    handler: ./src/memes/upload.getPresignedUrl
-    role: MainRole
-    events:
-      - http:
-          path: memes/presignedUrl
-          method: get
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-            allowCredencials: true
-          authorizer:
-            name: authorizer
-            arn: top-secret
-            identitySource: method.request.header.Authorization
+    getMemes:
+        handler: ./src/memes/get.handler
+        role: MainRole
+        events:
+            - http:
+                  path: memes
+                  method: get
+                  cors:
+                      origin: "*"
+                      headers:
+                          - Content-Type
+                          - X-Amz-Date
+                          - Authorization
+                          - X-Api-Key
+                          - X-Amz-Security-Token
+                          - X-Amz-User-Agent
+                      allowCredencials: true
+    getPresignedUrl:
+        handler: ./src/memes/upload.getPresignedUrl
+        role: MainRole
+        events:
+            - http:
+                  path: memes/presignedUrl
+                  method: get
+                  cors:
+                      origin: "*"
+                      headers:
+                          - Content-Type
+                          - X-Amz-Date
+                          - Authorization
+                          - X-Api-Key
+                          - X-Amz-Security-Token
+                          - X-Amz-User-Agent
+                      allowCredencials: true
+                  authorizer:
+                      name: authorizer
+                      arn: asd
+                      identitySource: method.request.header.Authorization
 
-  upload:
-    handler: ./src/memes/upload.uploadHandler
-    role: MainRole
-    events:
-      - http:
-          path: memes/upload
-          method: post
-          cors:
-            origin: "*"
-            headers:
-              - Content-Type
-              - X-Amz-Date
-              - Authorization
-              - X-Api-Key
-              - X-Amz-Security-Token
-              - X-Amz-User-Agent
-            allowCredencials: true
-          authorizer:
-            name: authorizer
-            arn: top-secret
-            identitySource: method.request.header.Authorization
+    upload:
+        handler: ./src/memes/upload.uploadHandler
+        role: MainRole
+        events:
+            - http:
+                  path: memes/upload
+                  method: post
+                  cors:
+                      origin: "*"
+                      headers:
+                          - Content-Type
+                          - X-Amz-Date
+                          - Authorization
+                          - X-Api-Key
+                          - X-Amz-Security-Token
+                          - X-Amz-User-Agent
+                      allowCredencials: true
+                  authorizer:
+                      name: authorizer
+                      arn: asd
+                      identitySource: method.request.header.Authorization
 
-# you can add CloudFormation resource templates here
 resources:
-  Resources:
-    MainRole:
-      Type: AWS::IAM::Role
-      Properties:
-        Path: /lambdas/
-        RoleName: MainRole
-        ManagedPolicyArns:
-          - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-          - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-        AssumeRolePolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Effect: Allow
-              Principal:
-                Service:
-                  - lambda.amazonaws.com
-              Action: sts:AssumeRole
-    S3Policy:
-      Type: AWS::IAM::Policy
-      Properties:
-        Roles:
-          - !Ref MainRole
-        PolicyDocument:
-          Version: "2012-10-17"
-          Statement:
-            - Effect: "Allow"
-              Action:
-                - "s3:PutAccountPublicAccessBlock"
-                - "s3:GetAccountPublicAccessBlock"
-                - "s3:ListAllMyBuckets"
-                - "s3:HeadBucket"
-              Resource: "*"
-        PolicyName: "S3Policy"
-    MemesDynamoDBTable:
-      Type: AWS::DynamoDB::Table
-      DeletionPolicy: Retain
-      Properties:
-        TableName: "memes"
-        AttributeDefinitions:
-          - AttributeName: "id"
-            AttributeType: "S"
-        KeySchema:
-          - AttributeName: "id"
-            KeyType: "HASH"
-        ProvisionedThroughput:
-          ReadCapacityUnits: "5"
-          WriteCapacityUnits: "5"
-    S3Bucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: memes-bucket
-        CorsConfiguration:
-          CorsRules:
-            - AllowedMethods:
-                - PUT
-                - HEAD
-                - GET
-                - POST
-              AllowedOrigins:
-                - "http://localhost:3000"
-                - "https://d23zadm539uhre.cloudfront.net"
-              AllowedHeaders:
-                - "*"
+	Resources:
+		CognitoUserPool:
+            Type: AWS::Cognito::UserPool
+            Properties:
+                UserPoolName: ${self:provider.stage}-user-pool
+                UsernameAttributes:
+                    - email
+                AutoVerifiedAttributes:
+                    - email
+        CognitoUserPoolClient:
+            Type: AWS::Cognito::UserPoolClient
+            Properties:
+                ClientName: ${self:provider.stage}-user-pool-client
+                UserPoolId:
+                    Ref: CognitoUserPool
+                ExplicitAuthFlows:
+                    - ADMIN_NO_SRP_AUTH
+				GenerateSecret: false
+				
+        MainRole:
+            Type: AWS::IAM::Role
+            Properties:
+                Path: /lambdas/
+                RoleName: MainRole
+                ManagedPolicyArns:
+                    - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+                    - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+                AssumeRolePolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Principal:
+                              Service:
+                                  - lambda.amazonaws.com
+                          Action: sts:AssumeRole
+        S3Policy:
+            Type: AWS::IAM::Policy
+            Properties:
+                Roles:
+                    - !Ref MainRole
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: "Allow"
+                          Action:
+                              - "s3:PutAccountPublicAccessBlock"
+                              - "s3:GetAccountPublicAccessBlock"
+                              - "s3:ListAllMyBuckets"
+                              - "s3:HeadBucket"
+                          Resource: "*"
+                PolicyName: "S3Policy"
+        MemesDynamoDBTable:
+            Type: AWS::DynamoDB::Table
+            DeletionPolicy: Retain
+            Properties:
+                TableName: "memes"
+                AttributeDefinitions:
+                    - AttributeName: "id"
+                      AttributeType: "S"
+                KeySchema:
+                    - AttributeName: "id"
+                      KeyType: "HASH"
+                ProvisionedThroughput:
+                    ReadCapacityUnits: "5"
+                    WriteCapacityUnits: "5"
+        S3Bucket:
+            Type: AWS::S3::Bucket
+            Properties:
+                BucketName: memes-bucket
+                CorsConfiguration:
+                    CorsRules:
+                        - AllowedMethods:
+                              - PUT
+                              - HEAD
+                              - GET
+                              - POST
+                          AllowedOrigins:
+                              - "http://localhost:3000"
+                              - "https://d23zadm539uhre.cloudfront.net"
+                          AllowedHeaders:
+                              - "*"
