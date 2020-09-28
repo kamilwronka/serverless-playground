@@ -2,7 +2,8 @@
     "scripts": {
         "start": "sls offline",
         "debug": "sls offline",
-        "deploy": "sls deploy"
+        "deploy": "sls deploy",
+        "config": "sls config credencials"
     },
     "devDependencies": {
         "serverless": "^2.3.0",

@@ -15,6 +15,10 @@ jobs:
                   command: |
                       yarn
             - run:
+                  name: Set AWS profile
+                  command: |
+                      yarn config --provider aws --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY
+            - run:
                   name: Deploy application
                   command: yarn deploy -v
             - save_cache:
