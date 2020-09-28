@@ -8,7 +8,7 @@ export function handler(event, context, callback) {
   let limit = get(event, "queryStringParameters.limit", "12");
 
   const params = {
-    TableName: "memes",
+    TableName: `memes-${process.env.STAGE}`,
     Select: "ALL_ATTRIBUTES",
     Limit: limit,
   };
