@@ -89,7 +89,7 @@ resources:
             Type: "AWS::IAM::Role"
             Properties:
                 Path: /lambdas/
-                RoleName: MainRole
+                RoleName: MainRole-${self:provider.stage}
                 ManagedPolicyArns:
                     - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
                     - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
@@ -121,7 +121,7 @@ resources:
             Type: "AWS::DynamoDB::Table"
             DeletionPolicy: Retain
             Properties:
-                TableName: memes
+                TableName: memes-${self:provider.stage}
                 AttributeDefinitions:
                     - AttributeName: id
                       AttributeType: S
@@ -134,7 +134,7 @@ resources:
         S3Bucket:
             Type: "AWS::S3::Bucket"
             Properties:
-                BucketName: memes-bucket
+                BucketName: memes-bucket-${self:provider.stage}
                 CorsConfiguration:
                     CorsRules:
                         - AllowedMethods:

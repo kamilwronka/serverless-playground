@@ -9,7 +9,7 @@ export async function getPresignedUrl(event, context, callback) {
   const key = `${userId}/${uuid()}.jpg`;
 
   const params = {
-    Bucket: "memes-bucket",
+    Bucket: `memes-bucket-${process.env.STAGE}`,
     Key: key,
     ContentType: "image/jpeg",
   };
@@ -38,7 +38,7 @@ export function uploadHandler(event, context, callback) {
   const objectId = uuid();
 
   const params = {
-    TableName: "memes",
+    TableName: `memes-${process.env.STAGE}`,
     Item: { id: objectId, userId, url: body.url, title: body.title },
   };
 
