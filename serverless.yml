@@ -9,7 +9,9 @@ provider:
 	region: eu-central-1
 	environment:
 		ENVIRONMENT: ${self:provider.stage}
-
+	deploymentBucket:
+    	name: memes-services-${self:provider.stage}
+	
 
 plugins:
     - serverless-plugin-typescript

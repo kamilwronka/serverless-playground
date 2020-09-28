@@ -40,3 +40,23 @@ jobs:
                   paths:
                       - node_modules
                   key: dependencies-cache-{{ checksum "package.json" }}
+
+workflows:
+    version: 2
+    deploy_dev:
+        jobs:
+            - build:
+                  context: memes-dev
+                  filters:
+                      branches:
+                          only:
+                              - develop
+
+    deploy_prod:
+        jobs:
+            - build:
+                  context: memes-prod
+                  filters:
+                      branches:
+                          only:
+                              - master
