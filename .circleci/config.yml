@@ -17,7 +17,7 @@ jobs:
                       yarn
             - run:
                   name: Set AWS profile
-                  command: serverless config credentials --provider aws --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY
+                  command: serverless config credentials --provider aws --key $AWS_KEY_ID --secret $AWS_KEY_SECRET
             - run:
                   name: Deploy application
                   command: serverless deploy -v
