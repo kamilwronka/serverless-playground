@@ -11,16 +11,17 @@ jobs:
                       - 'dependencies-cache-{{ checksum "package.json" }}'
                       - dependencies-cache
             - run:
-                  name: Install dependencies
+                  name: Install dependencies and Serverless CLI
                   command: |
+                      sudo npm i -g serverless
                       yarn
             - run:
                   name: Set AWS profile
                   command: |
-                      yarn configure --provider aws --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY
+                      serverless config credencials --provider aws --key $AWS_ACCESS_KEY_ID --secret $AWS_SECRET_ACCESS_KEY
             - run:
                   name: Deploy application
-                  command: yarn deploy -v
+                  command: serverless deploy -v
             - save_cache:
                   paths:
                       - node_modules
