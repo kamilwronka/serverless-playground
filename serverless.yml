@@ -115,7 +115,7 @@ resources:
                     Statement:
                         - Effect: Allow
                           Principal: null
-                          Service:
+                            Service:
                               - lambda.amazonaws.com
                           Action: "sts:AssumeRole"
         S3Policy:
