@@ -114,9 +114,9 @@ resources:
                     Version: "2012-10-17"
                     Statement:
                         - Effect: Allow
-                          Principal: null
-                            Service:
-                              - lambda.amazonaws.com
+                          Principal:
+                              Service:
+                                  - lambda.amazonaws.com
                           Action: "sts:AssumeRole"
         S3Policy:
             Type: "AWS::IAM::Policy"
