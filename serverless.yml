@@ -1,27 +1,22 @@
 service: memes
-
 frameworkVersion: "2"
-
 provider:
     name: aws
     runtime: nodejs12.x
-    stage: ${env:STAGE}
-	region: eu-central-1
-	environment:
-		ENVIRONMENT: ${self:provider.stage}
-	deploymentBucket:
-    	name: memes-services-${self:provider.stage}
-	
+    stage: "${env:STAGE}"
+    region: eu-central-1
+    environment:
+        ENVIRONMENT: "${self:provider.stage}"
+    deploymentBucket:
+        name: "memes-services-${self:provider.stage}"
 
 plugins:
     - serverless-plugin-typescript
     - serverless-offline
     - serverless-plugin-include-dependencies
     - serverless-aws-documentation
-
 package:
     excludeDevDependencies: true
-
 custom:
     serverless-offline:
         httpPort: 4000
@@ -65,7 +60,6 @@ functions:
                       name: authorizer
                       arn: asd
                       identitySource: method.request.header.Authorization
-
     upload:
         handler: ./src/memes/upload.uploadHandler
         role: MainRole
@@ -87,29 +81,27 @@ functions:
                       name: authorizer
                       arn: asd
                       identitySource: method.request.header.Authorization
-
 resources:
-	Resources:
-		CognitoUserPool:
-            Type: AWS::Cognito::UserPool
+    Resources:
+        CognitoUserPool:
+            Type: "AWS::Cognito::UserPool"
             Properties:
-                UserPoolName: ${self:provider.stage}-user-pool
+                UserPoolName: "${self:provider.stage}-user-pool"
                 UsernameAttributes:
                     - email
                 AutoVerifiedAttributes:
                     - email
         CognitoUserPoolClient:
-            Type: AWS::Cognito::UserPoolClient
+            Type: "AWS::Cognito::UserPoolClient"
             Properties:
-                ClientName: ${self:provider.stage}-user-pool-client
+                ClientName: "${self:provider.stage}-user-pool-client"
                 UserPoolId:
                     Ref: CognitoUserPool
                 ExplicitAuthFlows:
                     - ADMIN_NO_SRP_AUTH
-				GenerateSecret: false
-				
+            GenerateSecret: false
         MainRole:
-            Type: AWS::IAM::Role
+            Type: "AWS::IAM::Role"
             Properties:
                 Path: /lambdas/
                 RoleName: MainRole
@@ -120,42 +112,40 @@ resources:
                     Version: "2012-10-17"
                     Statement:
                         - Effect: Allow
-                          Principal:
-                              Service:
-                                  - lambda.amazonaws.com
-                          Action: sts:AssumeRole
+                          Principal: null
+                          Service:
+                              - lambda.amazonaws.com
+                          Action: "sts:AssumeRole"
         S3Policy:
-            Type: AWS::IAM::Policy
+            Type: "AWS::IAM::Policy"
             Properties:
-                Roles:
-                    - !Ref MainRole
                 PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
-                        - Effect: "Allow"
+                        - Effect: Allow
                           Action:
                               - "s3:PutAccountPublicAccessBlock"
                               - "s3:GetAccountPublicAccessBlock"
                               - "s3:ListAllMyBuckets"
                               - "s3:HeadBucket"
                           Resource: "*"
-                PolicyName: "S3Policy"
+                PolicyName: S3Policy
         MemesDynamoDBTable:
-            Type: AWS::DynamoDB::Table
+            Type: "AWS::DynamoDB::Table"
             DeletionPolicy: Retain
             Properties:
-                TableName: "memes"
+                TableName: memes
                 AttributeDefinitions:
-                    - AttributeName: "id"
-                      AttributeType: "S"
+                    - AttributeName: id
+                      AttributeType: S
                 KeySchema:
-                    - AttributeName: "id"
-                      KeyType: "HASH"
+                    - AttributeName: id
+                      KeyType: HASH
                 ProvisionedThroughput:
                     ReadCapacityUnits: "5"
                     WriteCapacityUnits: "5"
         S3Bucket:
-            Type: AWS::S3::Bucket
+            Type: "AWS::S3::Bucket"
             Properties:
                 BucketName: memes-bucket
                 CorsConfiguration:

@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "cwd": "${workspaceRoot}",
             "runtimeExecutable": "npm",
-            "runtimeArgs": ["run-script", "debug"],
+            "runtimeArgs": ["run-script", "deploy", "--noDeploy"],
             "port": 9229,
             "env": {
                 "STAGE": "dev"
