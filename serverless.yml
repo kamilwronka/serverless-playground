@@ -60,7 +60,7 @@ functions:
                       allowCredencials: true
                   authorizer:
                       name: authorizer
-                      arn: asd
+                      arn: "${env:AUTHORIZER_ARN}"
                       identitySource: method.request.header.Authorization
     upload:
         handler: ./src/memes/upload.uploadHandler
@@ -81,27 +81,10 @@ functions:
                       allowCredencials: true
                   authorizer:
                       name: authorizer
-                      arn: asd
+                      arn: "${env:AUTHORIZER_ARN}"
                       identitySource: method.request.header.Authorization
 resources:
     Resources:
-        CognitoUserPool:
-            Type: "AWS::Cognito::UserPool"
-            Properties:
-                UserPoolName: "${self:provider.stage}-user-pool"
-                UsernameAttributes:
-                    - email
-                AutoVerifiedAttributes:
-                    - email
-        CognitoUserPoolClient:
-            Type: "AWS::Cognito::UserPoolClient"
-            Properties:
-                ClientName: "${self:provider.stage}-user-pool-client"
-                UserPoolId:
-                    Ref: CognitoUserPool
-                ExplicitAuthFlows:
-                    - ADMIN_NO_SRP_AUTH
-            GenerateSecret: false
         MainRole:
             Type: "AWS::IAM::Role"
             Properties:
@@ -115,25 +98,25 @@ resources:
                     Statement:
                         - Effect: Allow
                           Principal:
-                              Service:
-                                  - lambda.amazonaws.com
+                            Service:
+                              - lambda.amazonaws.com
                           Action: "sts:AssumeRole"
         S3Policy:
             Type: "AWS::IAM::Policy"
             Properties:
-                Roles:
-                    - !Ref DefaultRole
-                PolicyDocument:
-                    Version: "2012-10-17"
-                    Statement:
-                        - Effect: Allow
-                          Action:
-                              - "s3:PutAccountPublicAccessBlock"
-                              - "s3:GetAccountPublicAccessBlock"
-                              - "s3:ListAllMyBuckets"
-                              - "s3:HeadBucket"
-                          Resource: "*"
-                PolicyName: S3Policy
+              Roles:
+                - !Ref MainRole
+              PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                  - Effect: Allow
+                    Action:
+                      - "s3:PutAccountPublicAccessBlock"
+                      - "s3:GetAccountPublicAccessBlock"
+                      - "s3:ListAllMyBuckets"
+                      - "s3:HeadBucket"
+                    Resource: "*"
+              PolicyName: S3Policy
         MemesDynamoDBTable:
             Type: "AWS::DynamoDB::Table"
             DeletionPolicy: Retain
@@ -164,18 +147,3 @@ resources:
                               - "https://d23zadm539uhre.cloudfront.net"
                           AllowedHeaders:
                               - "*"
-        CloudwatchPolicy:
-            Type: AWS::IAM::Policy
-            Properties:
-            Roles:
-                - !Ref DefaultRole
-            PolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                    - Effect: "Allow"
-                      Action:
-                          - "logs:CreateLogStream"
-                          - "logs:PutLogEvents"
-                          - "cloudwatch:PutMetricData"
-                      Resource: "*"
-            PolicyName: "CloudwatchPolicy"
