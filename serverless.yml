@@ -121,6 +121,8 @@ resources:
         S3Policy:
             Type: "AWS::IAM::Policy"
             Properties:
+                Roles:
+                    - !Ref DefaultRole
                 PolicyDocument:
                     Version: "2012-10-17"
                     Statement:
@@ -162,3 +164,18 @@ resources:
                               - "https://d23zadm539uhre.cloudfront.net"
                           AllowedHeaders:
                               - "*"
+        CloudwatchPolicy:
+            Type: AWS::IAM::Policy
+            Properties:
+            Roles:
+                - !Ref DefaultRole
+            PolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: "Allow"
+                      Action:
+                          - "logs:CreateLogStream"
+                          - "logs:PutLogEvents"
+                          - "cloudwatch:PutMetricData"
+                      Resource: "*"
+            PolicyName: "CloudwatchPolicy"

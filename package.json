@@ -3,7 +3,7 @@
         "start": "sls offline",
         "debug": "sls offline",
         "deploy": "sls deploy",
-        "config": "sls config credencials"
+        "configure": "sls config credencials"
     },
     "devDependencies": {
         "serverless": "^2.3.0",
