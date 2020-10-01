@@ -1,9 +1,19 @@
 import { DynamoDB } from "aws-sdk";
+import { get, isEmpty } from "lodash";
 
 export async function handler(event) {
   const dynamoClient = new DynamoDB.DocumentClient();
 
-  const userId = event.request.userAttributes.sub;
+  const userId = get(event, "requestContext.authorizer.claims.sub", null);
+
+  if (isEmpty(userId)) {
+    return {
+      statusCode: 400,
+      body: {
+        message: "No user ID.",
+      },
+    };
+  }
 
   const params: DynamoDB.DocumentClient.GetItemInput = {
     TableName: `users-${process.env.ENVIRONMENT}`,
