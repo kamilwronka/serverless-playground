@@ -85,6 +85,7 @@ functions:
     events:
       - s3:
           bucket: memes-${self:provider.stage}
+          existing: true
           event: s3:ObjectCreated:*
           rules:
             - suffix: ".jpg"
