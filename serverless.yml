@@ -84,7 +84,7 @@ functions:
     role: MainRole
     events:
       - s3:
-          bucket: memes-bucket-${self:provider.stage}
+          bucket: memes-${self:provider.stage}
           event: s3:ObjectCreated:*
           rules:
             - suffix: ".jpg"
@@ -154,7 +154,7 @@ resources:
     S3Bucket:
       Type: "AWS::S3::Bucket"
       Properties:
-        BucketName: memes-bucket-${self:provider.stage}
+        BucketName: memes-${self:provider.stage}
         CorsConfiguration:
           CorsRules:
             - AllowedMethods:

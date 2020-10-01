@@ -18,7 +18,7 @@ export function handler(event, context, callback) {
   console.log(JSON.stringify(event));
 
   const params = {
-    Bucket: `memes-bucket-${process.env.STAGE}`,
+    Bucket: `memes-${process.env.STAGE}`,
     Key:
       "7f63832d-2a1c-40f4-938d-58423d0742df/4ad2e8b4-4b70-4ade-8f16-65647b72de39.jpg",
   };
@@ -37,7 +37,7 @@ export function handler(event, context, callback) {
     // const thumbnail = await image.resize(SIZES.THUMBNAIL);
 
     const parameters: S3.PutObjectRequest = {
-      Bucket: `memes-bucket-${process.env.STAGE}`,
+      Bucket: `memes-${process.env.STAGE}`,
       Key:
         "7f63832d-2a1c-40f4-938d-58423d0742df/4ad2e8b4-4b70-4ade-8f16-65647b72de39aaaa-standard.jpeg",
       Body: standard,
