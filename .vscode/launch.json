@@ -13,7 +13,9 @@
             "runtimeArgs": ["run-script", "debug"],
             "port": 9229,
             "env": {
-                "STAGE": "dev"
+                "STAGE": "dev",
+                "AUTHORIZER_ARN": "arn:aws:cognito-idp:eu-central-1:710220407708:userpool/eu-central-1_XB2xtaC6E",
+                "DOMAIN_NAME": "api.dev.kamilwronka.com"
             }
         }
     ]

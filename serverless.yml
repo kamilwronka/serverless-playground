@@ -17,11 +17,17 @@ plugins:
     - serverless-plugin-include-dependencies
     - serverless-aws-documentation
     - serverless-deployment-bucket
+    - serverless-domain-manager
 package:
     excludeDevDependencies: true
 custom:
     serverless-offline:
         httpPort: 4000
+    customDomain:
+        domainName: "${env:DOMAIN_NAME}"
+        stage: "${env:STAGE}"
+        createRoute53Record: true
+        securityPolicy: tls_1_2
 
 functions:
     getMemes:
@@ -41,34 +47,14 @@ functions:
                           - X-Amz-Security-Token
                           - X-Amz-User-Agent
                       allowCredencials: true
-    getPresignedUrl:
-        handler: ./src/memes/upload.getPresignedUrl
-        role: MainRole
-        events:
-            - http:
-                  path: memes/presignedUrl
-                  method: get
-                  cors:
-                      origin: "*"
-                      headers:
-                          - Content-Type
-                          - X-Amz-Date
-                          - Authorization
-                          - X-Api-Key
-                          - X-Amz-Security-Token
-                          - X-Amz-User-Agent
-                      allowCredencials: true
-                  authorizer:
-                      name: authorizer
-                      arn: "${env:AUTHORIZER_ARN}"
-                      identitySource: method.request.header.Authorization
-    upload:
+
+    uploadMeme:
         handler: ./src/memes/upload.uploadHandler
         role: MainRole
         events:
             - http:
                   path: memes/upload
-                  method: post
+                  method: put
                   cors:
                       origin: "*"
                       headers:
@@ -83,6 +69,17 @@ functions:
                       name: authorizer
                       arn: "${env:AUTHORIZER_ARN}"
                       identitySource: method.request.header.Authorization
+
+    resizeMeme:
+        handler: ./src/memes/resize.handler
+        role: MainRole
+        events:
+            - s3:
+                  bucket: memes-bucket-${self:provider.stage}
+                  event: s3:ObjectCreated:*
+                  rules:
+                      - suffix: ".jpg"
+
 resources:
     Resources:
         MainRole:
@@ -98,25 +95,25 @@ resources:
                     Statement:
                         - Effect: Allow
                           Principal:
-                            Service:
-                              - lambda.amazonaws.com
+                              Service:
+                                  - lambda.amazonaws.com
                           Action: "sts:AssumeRole"
         S3Policy:
             Type: "AWS::IAM::Policy"
             Properties:
-              Roles:
-                - !Ref MainRole
-              PolicyDocument:
-                Version: "2012-10-17"
-                Statement:
-                  - Effect: Allow
-                    Action:
-                      - "s3:PutAccountPublicAccessBlock"
-                      - "s3:GetAccountPublicAccessBlock"
-                      - "s3:ListAllMyBuckets"
-                      - "s3:HeadBucket"
-                    Resource: "*"
-              PolicyName: S3Policy
+                Roles:
+                    - !Ref MainRole
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: Allow
+                          Action:
+                              - "s3:PutAccountPublicAccessBlock"
+                              - "s3:GetAccountPublicAccessBlock"
+                              - "s3:ListAllMyBuckets"
+                              - "s3:HeadBucket"
+                          Resource: "*"
+                PolicyName: S3Policy
         MemesDynamoDBTable:
             Type: "AWS::DynamoDB::Table"
             DeletionPolicy: Retain
@@ -147,3 +144,18 @@ resources:
                               - "https://d23zadm539uhre.cloudfront.net"
                           AllowedHeaders:
                               - "*"
+        CloudWatchPolicy:
+            Type: AWS::IAM::Policy
+            Properties:
+                Roles:
+                    - !Ref MainRole
+                PolicyDocument:
+                    Version: "2012-10-17"
+                    Statement:
+                        - Effect: "Allow"
+                          Action:
+                              - "logs:CreateLogStream"
+                              - "logs:PutLogEvents"
+                              - "cloudwatch:PutMetricData"
+                          Resource: "*"
+                PolicyName: "CloudWatchPolicy"
