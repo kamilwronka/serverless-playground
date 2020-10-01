@@ -79,6 +79,28 @@ functions:
           trigger: PostConfirmation
           existing: true
 
+  getUser:
+    handler: ./src/users/getUser.handler
+    role: MainRole
+    events:
+      - http:
+          path: users/current
+          method: get
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredencials: true
+          authorizer:
+            name: authorizer
+            arn: "${env:AUTHORIZER_ARN}"
+            identitySource: method.request.header.Authorization
+
   resizeMeme:
     handler: ./src/memes/resize.handler
     role: MainRole
