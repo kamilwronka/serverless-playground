@@ -1,161 +1,184 @@
 service: memes
 frameworkVersion: "2"
 provider:
-    name: aws
-    runtime: nodejs12.x
-    stage: "${env:STAGE}"
-    region: eu-central-1
-    environment:
-        ENVIRONMENT: "${self:provider.stage}"
-    deploymentBucket:
-        name: "memes-services-${self:provider.stage}"
-        serverSideEncryption: AES256
+  name: aws
+  runtime: nodejs12.x
+  stage: "${env:STAGE}"
+  region: eu-central-1
+  environment:
+    ENVIRONMENT: "${self:provider.stage}"
+  deploymentBucket:
+    name: "memes-services-${self:provider.stage}"
+    serverSideEncryption: AES256
 
 plugins:
-    - serverless-plugin-typescript
-    - serverless-offline
-    - serverless-plugin-include-dependencies
-    - serverless-aws-documentation
-    - serverless-deployment-bucket
-    - serverless-domain-manager
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-plugin-include-dependencies
+  - serverless-aws-documentation
+  - serverless-deployment-bucket
+  - serverless-domain-manager
 package:
-    excludeDevDependencies: true
+  excludeDevDependencies: true
 custom:
-    serverless-offline:
-        httpPort: 4000
-    customDomain:
-        domainName: "${env:DOMAIN_NAME}"
-        stage: "${env:STAGE}"
-        createRoute53Record: true
-        securityPolicy: tls_1_2
+  serverless-offline:
+    httpPort: 4000
+  customDomain:
+    domainName: "${env:DOMAIN_NAME}"
+    stage: "${env:STAGE}"
+    createRoute53Record: true
+    securityPolicy: tls_1_2
 
 functions:
-    getMemes:
-        handler: ./src/memes/get.handler
-        role: MainRole
-        events:
-            - http:
-                  path: memes
-                  method: get
-                  cors:
-                      origin: "*"
-                      headers:
-                          - Content-Type
-                          - X-Amz-Date
-                          - Authorization
-                          - X-Api-Key
-                          - X-Amz-Security-Token
-                          - X-Amz-User-Agent
-                      allowCredencials: true
+  getMemes:
+    handler: ./src/memes/get.handler
+    role: MainRole
+    events:
+      - http:
+          path: memes
+          method: get
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredencials: true
 
-    uploadMeme:
-        handler: ./src/memes/upload.uploadHandler
-        role: MainRole
-        events:
-            - http:
-                  path: memes/upload
-                  method: put
-                  cors:
-                      origin: "*"
-                      headers:
-                          - Content-Type
-                          - X-Amz-Date
-                          - Authorization
-                          - X-Api-Key
-                          - X-Amz-Security-Token
-                          - X-Amz-User-Agent
-                      allowCredencials: true
-                  authorizer:
-                      name: authorizer
-                      arn: "${env:AUTHORIZER_ARN}"
-                      identitySource: method.request.header.Authorization
+  uploadMeme:
+    handler: ./src/memes/upload.uploadHandler
+    role: MainRole
+    events:
+      - http:
+          path: memes/upload
+          method: put
+          cors:
+            origin: "*"
+            headers:
+              - Content-Type
+              - X-Amz-Date
+              - Authorization
+              - X-Api-Key
+              - X-Amz-Security-Token
+              - X-Amz-User-Agent
+            allowCredencials: true
+          authorizer:
+            name: authorizer
+            arn: "${env:AUTHORIZER_ARN}"
+            identitySource: method.request.header.Authorization
 
-    resizeMeme:
-        handler: ./src/memes/resize.handler
-        role: MainRole
-        events:
-            - s3:
-                  bucket: memes-bucket-${self:provider.stage}
-                  event: s3:ObjectCreated:*
-                  rules:
-                      - suffix: ".jpg"
+  createUser:
+    handler: ./src/users/profile/createUser.handler
+    role: MainRole
+    events:
+      - cognitoUserPool:
+          pool: auth-example
+          trigger: PostConfirmation
+          existing: true
+
+  resizeMeme:
+    handler: ./src/memes/resize.handler
+    role: MainRole
+    events:
+      - s3:
+          bucket: memes-bucket-${self:provider.stage}
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: ".jpg"
 
 resources:
-    Resources:
-        MainRole:
-            Type: "AWS::IAM::Role"
-            Properties:
-                Path: /lambdas/
-                RoleName: MainRole-${self:provider.stage}
-                ManagedPolicyArns:
-                    - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-                    - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-                AssumeRolePolicyDocument:
-                    Version: "2012-10-17"
-                    Statement:
-                        - Effect: Allow
-                          Principal:
-                              Service:
-                                  - lambda.amazonaws.com
-                          Action: "sts:AssumeRole"
-        S3Policy:
-            Type: "AWS::IAM::Policy"
-            Properties:
-                Roles:
-                    - !Ref MainRole
-                PolicyDocument:
-                    Version: "2012-10-17"
-                    Statement:
-                        - Effect: Allow
-                          Action:
-                              - "s3:PutAccountPublicAccessBlock"
-                              - "s3:GetAccountPublicAccessBlock"
-                              - "s3:ListAllMyBuckets"
-                              - "s3:HeadBucket"
-                          Resource: "*"
-                PolicyName: S3Policy
-        MemesDynamoDBTable:
-            Type: "AWS::DynamoDB::Table"
-            DeletionPolicy: Retain
-            Properties:
-                TableName: memes-${self:provider.stage}
-                AttributeDefinitions:
-                    - AttributeName: id
-                      AttributeType: S
-                KeySchema:
-                    - AttributeName: id
-                      KeyType: HASH
-                ProvisionedThroughput:
-                    ReadCapacityUnits: "5"
-                    WriteCapacityUnits: "5"
-        S3Bucket:
-            Type: "AWS::S3::Bucket"
-            Properties:
-                BucketName: memes-bucket-${self:provider.stage}
-                CorsConfiguration:
-                    CorsRules:
-                        - AllowedMethods:
-                              - PUT
-                              - HEAD
-                              - GET
-                              - POST
-                          AllowedOrigins:
-                              - "http://localhost:3000"
-                              - "https://d23zadm539uhre.cloudfront.net"
-                          AllowedHeaders:
-                              - "*"
-        CloudWatchPolicy:
-            Type: AWS::IAM::Policy
-            Properties:
-                Roles:
-                    - !Ref MainRole
-                PolicyDocument:
-                    Version: "2012-10-17"
-                    Statement:
-                        - Effect: "Allow"
-                          Action:
-                              - "logs:CreateLogStream"
-                              - "logs:PutLogEvents"
-                              - "cloudwatch:PutMetricData"
-                          Resource: "*"
-                PolicyName: "CloudWatchPolicy"
+  Resources:
+    MainRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        Path: /lambdas/
+        RoleName: MainRole-${self:provider.stage}
+        ManagedPolicyArns:
+          - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+          - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: "sts:AssumeRole"
+    S3Policy:
+      Type: "AWS::IAM::Policy"
+      Properties:
+        Roles:
+          - !Ref MainRole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutAccountPublicAccessBlock"
+                - "s3:GetAccountPublicAccessBlock"
+                - "s3:ListAllMyBuckets"
+                - "s3:HeadBucket"
+              Resource: "*"
+        PolicyName: S3Policy
+    MemesDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Retain
+      Properties:
+        TableName: memes-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: "5"
+          WriteCapacityUnits: "5"
+    UsersDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Retain
+      Properties:
+        TableName: users-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: "5"
+          WriteCapacityUnits: "5"
+    S3Bucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: memes-bucket-${self:provider.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - PUT
+                - HEAD
+                - GET
+                - POST
+              AllowedOrigins:
+                - "http://localhost:3000"
+                - "https://d23zadm539uhre.cloudfront.net"
+              AllowedHeaders:
+                - "*"
+    CloudWatchPolicy:
+      Type: AWS::IAM::Policy
+      Properties:
+        Roles:
+          - !Ref MainRole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "cloudwatch:PutMetricData"
+              Resource: "*"
+        PolicyName: "CloudWatchPolicy"
