@@ -71,7 +71,7 @@ functions:
             identitySource: method.request.header.Authorization
 
   createUser:
-    handler: ./src/users/profile/createUser.handler
+    handler: ./src/users/createUser.handler
     role: MainRole
     events:
       - cognitoUserPool:

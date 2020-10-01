@@ -1,0 +1,38 @@
+{
+  "Records": [
+    {
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "eu-central-1",
+      "eventTime": "2020-10-01T23:01:00.235Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "principalId"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "123.113.1231.123"
+      },
+      "responseElements": {
+        "x-amz-request-id": "id",
+        "x-amz-id-2": "amz-id"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "memes-dev-resizeMeme",
+        "bucket": {
+          "name": "memes-dev",
+          "ownerIdentity": {
+            "principalId": "principalId"
+          },
+          "arn": "aws-arn"
+        },
+        "object": {
+          "key": "you-think-this-is-a-motherfucking-game.jpg",
+          "size": 152105,
+          "eTag": "e5c369df690511e1f85600b767bdc31a",
+          "sequencer": "005F765FADA3D5EA67"
+        }
+      }
+    }
+  ]
+}
