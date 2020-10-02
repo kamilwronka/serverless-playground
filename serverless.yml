@@ -7,8 +7,7 @@ provider:
     region: eu-central-1
     environment:
         ENVIRONMENT: "${self:provider.stage}"
-        CORS_ORIGINS: 
-            !Join
+        CORS_ORIGINS: !Join
             - ","
             - "${self:custom.origins}"
     deploymentBucket:
@@ -103,6 +102,7 @@ functions:
     resizeMeme:
         handler: ./src/memes/resize.handler
         role: MainRole
+        dependsOn: MemesPendingS3Bucket
         events:
             - s3:
                   bucket: memes-pending-${self:provider.stage}
