@@ -1,0 +1,10 @@
+{
+    "corsOrigins": {
+        "dev": [
+            "http://localhost:3000",
+            "http://localhost:3001",
+            "https://dev.memes.kamilwronka.com"
+        ],
+        "prod": ["https://memes.kamilwronka.com"]
+    }
+}

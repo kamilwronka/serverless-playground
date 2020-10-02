@@ -1,35 +1,69 @@
-import { S3, DynamoDB } from "aws-sdk";
-import { get } from "lodash";
+import { APIGatewayProxyEvent, ProxyResult } from "aws-lambda";
+import { DynamoDB } from "aws-sdk";
+import { plainToClass } from "class-transformer";
+import { validateSync } from "class-validator";
+import { get, isEmpty } from "lodash";
 import { v4 as uuid } from "uuid";
 
-export function uploadHandler(event, context, callback) {
-  const dynamoClient = new DynamoDB.DocumentClient();
-  const userId = get(event, "requestContext.authorizer.claims.sub", "testID");
-  const body = JSON.parse(event.body);
+import BadRequest from "../lib/errors/BadRequest";
+import { cors } from "../lib/http/middleware/cors";
+import { CreateMemeRequestBody } from "./types/CreateMemeRequestBody";
+import { MemePending } from "./types/MemePending";
 
-  const objectId = uuid();
-
-  const params = {
-    TableName: `memes-${process.env.ENVIRONMENT}`,
-    Item: { id: objectId, userId, url: body.url, title: body.title },
-  };
-
-  dynamoClient.put(params, function (err, data) {
-    if (err) {
-      callback(err);
+export async function handler(
+    event: APIGatewayProxyEvent
+): Promise<ProxyResult> {
+    try {
+        cors(event);
+    } catch (error) {
+        return new BadRequest(error);
     }
 
-    const response = {
-      statusCode: 201,
-      body: JSON.stringify({
-        data,
-      }),
-      headers: {
-        "Access-Control-Allow-Origin": "*", // Required for CORS support to work
-        "Access-Control-Allow-Credentials": true, // Required for cookies, authorization headers with HTTPS
-      },
+    if (!event.body) {
+        return new BadRequest({ message: "Missing request body." });
+    }
+
+    const dynamoClient = new DynamoDB.DocumentClient();
+    const userId = get(event, "requestContext.authorizer.claims.sub", null);
+    const objectId = uuid();
+
+    let body;
+    if (event.body) {
+        body = JSON.parse(event.body);
+    }
+
+    const parsedBody = plainToClass(CreateMemeRequestBody, body);
+    const validation = validateSync(parsedBody, {
+        validationError: { target: false, value: false },
+    });
+
+    if (!isEmpty(validation)) {
+        return new BadRequest(validation);
+    }
+
+    const meme = new MemePending({
+        id: objectId,
+        userId,
+        url: parsedBody.url,
+        title: parsedBody.title,
+        tags: parsedBody.tags,
+    });
+
+    const params = {
+        TableName: `memes-pending-${process.env.ENVIRONMENT}`,
+        Item: meme,
     };
 
-    callback(null, response);
-  });
+    try {
+        await dynamoClient.put(params).promise();
+
+        const response: ProxyResult = {
+            statusCode: 201,
+            body: JSON.stringify({ message: "Created" }),
+        };
+
+        return response;
+    } catch (error) {
+        return new BadRequest(error);
+    }
 }

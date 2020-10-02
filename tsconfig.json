@@ -1,15 +1,16 @@
 {
-  "compilerOptions": {
-    "preserveConstEnums": true,
-    "strictNullChecks": true,
-    "sourceMap": true,
-    "allowJs": true,
-    "target": "es5",
-    "outDir": ".build",
-    "moduleResolution": "node",
-    "lib": ["es2015"],
-    "rootDir": "./",
-    "experimentalDecorators": true
-  },
-  "exclude": ["node_modules/**"]
+    "compilerOptions": {
+        "types": ["jest", "node"],
+        "preserveConstEnums": true,
+        "strictNullChecks": true,
+        "sourceMap": true,
+        "allowJs": true,
+        "target": "es5",
+        "outDir": ".build",
+        "moduleResolution": "node",
+        "lib": ["es2015"],
+        "rootDir": "./",
+        "experimentalDecorators": true
+    },
+    "exclude": ["node_modules/**"]
 }
