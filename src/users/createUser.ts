@@ -5,7 +5,9 @@ import { CognitoPostConfirmEvent } from "../lib/cognito/types/CognitoPostConfirm
 import { User } from "./types/User";
 import { validateSync } from "class-validator";
 
-export async function handler(event: CognitoPostConfirmEvent) {
+export async function handler(
+  event: CognitoPostConfirmEvent
+): Promise<CognitoPostConfirmEvent> {
   const dynamoClient = new DynamoDB.DocumentClient();
 
   const userId = event.request.userAttributes.sub;

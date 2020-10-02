@@ -5,8 +5,8 @@ import BadRequest from "../lib/errors/BadRequest";
 export async function handler(event, context, callback) {
   const dynamoClient = new DynamoDB.DocumentClient();
 
-  let lastItem = get(event, "queryStringParameters.lastItem", null);
-  let limit = get(event, "queryStringParameters.limit", "12");
+  const lastItem = get(event, "queryStringParameters.lastItem", null);
+  const limit = get(event, "queryStringParameters.limit", "12");
 
   const params = {
     TableName: `memes-${process.env.ENVIRONMENT}`,
