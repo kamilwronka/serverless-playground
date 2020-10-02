@@ -7,7 +7,10 @@ provider:
     region: eu-central-1
     environment:
         ENVIRONMENT: "${self:provider.stage}"
-        CORS_ORIGINS: "${self:custom.origins}"
+        CORS_ORIGINS: 
+            !Join
+            - ","
+            - "${self:custom.origins}"
     deploymentBucket:
         name: "memes-services-${self:provider.stage}"
         serverSideEncryption: AES256
