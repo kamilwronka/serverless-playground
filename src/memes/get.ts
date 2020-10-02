@@ -1,8 +1,18 @@
-import { get } from "lodash";
+import { APIGatewayEvent, ProxyResult } from "aws-lambda";
 import { DynamoDB } from "aws-sdk";
-import BadRequest from "../lib/errors/BadRequest";
+import { get } from "lodash";
 
-export async function handler(event, context, callback) {
+import BadRequest from "../lib/errors/BadRequest";
+import { addCorsHeaders } from "../lib/http/middleware/addCorsHeaders";
+import { cors } from "../lib/http/middleware/cors";
+
+export async function handler(event: APIGatewayEvent): Promise<ProxyResult> {
+    try {
+        cors(event);
+    } catch (error) {
+        return new BadRequest(error);
+    }
+
     const dynamoClient = new DynamoDB.DocumentClient();
 
     const lastItem = get(event, "queryStringParameters.lastItem", null);
@@ -24,16 +34,10 @@ export async function handler(event, context, callback) {
         const response = {
             statusCode: 200,
             body: JSON.stringify(retrievedData),
-            headers: {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Credentials": true,
-            },
         };
 
-        return response;
+        return addCorsHeaders(response);
     } catch (error) {
-        console.log(error);
-
         return new BadRequest(error);
     }
 }
