@@ -99,17 +99,17 @@ functions:
                       arn: "${env:AUTHORIZER_ARN}"
                       identitySource: method.request.header.Authorization
 
-    # resizeMeme:
-    #     handler: ./src/memes/resize.handler
-    #     role: MainRole
-    #     dependsOn: MemesPendingS3Bucket
-    #     events:
-    #         - s3:
-    #               bucket: memes-pending-${self:provider.stage}
-    #               existing: true
-    #               event: s3:ObjectCreated:*
-    #               rules:
-    #                   - suffix: ".jpg"
+    resizeMeme:
+        handler: ./src/memes/resize.handler
+        role: MainRole
+        dependsOn: MemesPendingS3Bucket
+        events:
+            - s3:
+                  bucket: memes-pending-${self:provider.stage}
+                  existing: true
+                  event: s3:ObjectCreated:*
+                  rules:
+                      - suffix: ".jpg"
 
 resources:
     Resources:
