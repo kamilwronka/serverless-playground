@@ -1,0 +1,200 @@
+service: memes
+frameworkVersion: "2"
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: "${env:STAGE}"
+  region: eu-central-1
+  environment:
+    ENVIRONMENT: "${self:provider.stage}"
+    CORS_ORIGINS:
+      # prettier-ignore
+      !Join
+      - ","
+      - "${self:custom.origins}"
+  deploymentBucket:
+    name: "memes-service-${self:provider.stage}"
+    serverSideEncryption: AES256
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-plugin-include-dependencies
+  - serverless-aws-documentation
+  - serverless-deployment-bucket
+  - serverless-domain-manager
+package:
+  excludeDevDependencies: true
+custom:
+  serverless-offline:
+    httpPort: 4000
+  customDomain:
+    domainName: "${env:DOMAIN_NAME}"
+    stage: "${env:STAGE}"
+    createRoute53Record: true
+    securityPolicy: tls_1_2
+  origins: ${file(../../config/config.json):corsOrigins.${env:STAGE}}
+
+functions:
+  getMemes:
+    handler: ./handlers/get.handler
+    role: MemesLambdaRole
+    events:
+      - http:
+          path: memes
+          method: get
+          cors:
+            origins: ${self:custom.origins}
+            allowCredencials: true
+
+  getPresignedUrl:
+    handler: ./handlers/getPresignedUrl.handler
+    role: MemesLambdaRole
+    events:
+      - http:
+          path: memes/presignedUrl
+          method: get
+          cors:
+            origins: ${self:custom.origins}
+            allowCredencials: true
+          authorizer:
+            name: authorizer
+            arn: "${env:AUTHORIZER_ARN}"
+            identitySource: method.request.header.Authorization
+
+  uploadMeme:
+    handler: ./handlers/upload.handler
+    role: MemesLambdaRole
+    events:
+      - http:
+          path: memes/upload
+          method: put
+          cors:
+            origins: ${self:custom.origins}
+            allowCredencials: true
+          authorizer:
+            name: authorizer
+            arn: "${env:AUTHORIZER_ARN}"
+            identitySource: method.request.header.Authorization
+
+  resizeMeme:
+    handler: ./handlers/resize.handler
+    role: MemesLambdaRole
+    dependsOn: MemesPendingS3Bucket
+    events:
+      - s3:
+          bucket: memes-pending-${self:provider.stage}
+          existing: true
+          event: s3:ObjectCreated:*
+          rules:
+            - suffix: ".jpg"
+
+resources:
+  Resources:
+    MemesLambdaRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        Path: /lambdas/
+        RoleName: MemesLambdaRole-${self:provider.stage}
+        ManagedPolicyArns:
+          - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+          - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: "sts:AssumeRole"
+    MemesS3Policy:
+      Type: "AWS::IAM::Policy"
+      Properties:
+        Roles:
+          - !Ref MemesLambdaRole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutAccountPublicAccessBlock"
+                - "s3:GetAccountPublicAccessBlock"
+                - "s3:ListAllMyBuckets"
+                - "s3:HeadBucket"
+              Resource: "*"
+        PolicyName: MemesS3Policy
+    MemesDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Retain
+      Properties:
+        TableName: memes-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: "5"
+          WriteCapacityUnits: "5"
+    MemesPendingDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Retain
+      Properties:
+        TableName: memes-pending-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: "5"
+          WriteCapacityUnits: "5"
+    MemesS3Bucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: memes-${self:provider.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - PUT
+                - HEAD
+                - GET
+                - POST
+              AllowedOrigins:
+                - "http://localhost:3000"
+                - "https://d23zadm539uhre.cloudfront.net"
+              AllowedHeaders:
+                - "*"
+    MemesPendingS3Bucket:
+      Type: "AWS::S3::Bucket"
+      Properties:
+        BucketName: memes-pending-${self:provider.stage}
+        CorsConfiguration:
+          CorsRules:
+            - AllowedMethods:
+                - PUT
+                - HEAD
+                - GET
+                - POST
+              AllowedOrigins:
+                - "http://localhost:3000"
+                - "https://d23zadm539uhre.cloudfront.net"
+              AllowedHeaders:
+                - "*"
+    MemesLambdaCloudWatchPolicy:
+      Type: AWS::IAM::Policy
+      Properties:
+        Roles:
+          - !Ref MemesLambdaRole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "cloudwatch:PutMetricData"
+              Resource: "*"
+        PolicyName: "CloudWatchPolicy"

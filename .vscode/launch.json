@@ -1,22 +1,36 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "type": "node",
-            "request": "launch",
-            "name": "Launch Program",
-            "cwd": "${workspaceRoot}",
-            "runtimeExecutable": "npm",
-            "runtimeArgs": ["run-script", "debug"],
-            "port": 9229,
-            "env": {
-                "STAGE": "dev",
-                "AUTHORIZER_ARN": "arn:aws:cognito-idp:eu-central-1:710220407708:userpool/eu-central-1_XB2xtaC6E",
-                "DOMAIN_NAME": "api.dev.kamilwronka.com"
-            }
-        }
-    ]
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run memes service",
+      "cwd": "${workspaceRoot}/src/services/memes",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "debug"],
+      "port": 9229,
+      "env": {
+        "STAGE": "dev",
+        "AUTHORIZER_ARN": "arn:aws:cognito-idp:eu-central-1:710220407708:userpool/eu-central-1_XB2xtaC6E",
+        "DOMAIN_NAME": "api.dev.kamilwronka.com"
+      }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Run users service",
+      "cwd": "${workspaceRoot}/src/services/users",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run-script", "debug"],
+      "port": 9229,
+      "env": {
+        "STAGE": "dev",
+        "AUTHORIZER_ARN": "arn:aws:cognito-idp:eu-central-1:710220407708:userpool/eu-central-1_XB2xtaC6E",
+        "DOMAIN_NAME": "api.dev.kamilwronka.com"
+      }
+    }
+  ]
 }

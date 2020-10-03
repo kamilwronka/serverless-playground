@@ -1,0 +1,123 @@
+service: users
+frameworkVersion: "2"
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: "${env:STAGE}"
+  region: eu-central-1
+  environment:
+    ENVIRONMENT: "${self:provider.stage}"
+    CORS_ORIGINS: !Join
+      - ","
+      - "${self:custom.origins}"
+  deploymentBucket:
+    name: "users-service-${self:provider.stage}"
+    serverSideEncryption: AES256
+
+plugins:
+  - serverless-plugin-typescript
+  - serverless-offline
+  - serverless-plugin-include-dependencies
+  - serverless-aws-documentation
+  - serverless-deployment-bucket
+  - serverless-domain-manager
+package:
+  excludeDevDependencies: true
+custom:
+  serverless-offline:
+    httpPort: 4000
+  customDomain:
+    domainName: "${env:DOMAIN_NAME}"
+    stage: "${env:STAGE}"
+    createRoute53Record: true
+    securityPolicy: tls_1_2
+  origins: ${file(./config/config.json):corsOrigins.${env:STAGE}}
+
+functions:
+  createUser:
+    handler: ./src/users/createUser.handler
+    role: UsersServiceMainRole
+    events:
+      - cognitoUserPool:
+          pool: auth-example
+          trigger: PostConfirmation
+          existing: true
+
+  getUser:
+    handler: ./src/users/getUser.handler
+    role: UsersServiceMainRole
+    events:
+      - http:
+          path: users/current
+          method: get
+          cors:
+            origins: ${self:custom.origins}
+            allowCredencials: true
+          authorizer:
+            name: authorizer
+            arn: "${env:AUTHORIZER_ARN}"
+            identitySource: method.request.header.Authorization
+
+resources:
+  Resources:
+    UsersServiceMainRole:
+      Type: "AWS::IAM::Role"
+      Properties:
+        Path: /lambdas/
+        RoleName: UsersServiceMainRole-${self:provider.stage}
+        ManagedPolicyArns:
+          - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+          - "arn:aws:iam::aws:policy/AmazonS3FullAccess"
+        AssumeRolePolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Principal:
+                Service:
+                  - lambda.amazonaws.com
+              Action: "sts:AssumeRole"
+    S3Policy:
+      Type: "AWS::IAM::Policy"
+      Properties:
+        Roles:
+          - !Ref UsersServiceMainRole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: Allow
+              Action:
+                - "s3:PutAccountPublicAccessBlock"
+                - "s3:GetAccountPublicAccessBlock"
+                - "s3:ListAllMyBuckets"
+                - "s3:HeadBucket"
+              Resource: "*"
+        PolicyName: S3Policy
+    UsersDynamoDBTable:
+      Type: "AWS::DynamoDB::Table"
+      DeletionPolicy: Retain
+      Properties:
+        TableName: users-${self:provider.stage}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: "5"
+          WriteCapacityUnits: "5"
+    CloudWatchPolicy:
+      Type: AWS::IAM::Policy
+      Properties:
+        Roles:
+          - !Ref UsersServiceMainRole
+        PolicyDocument:
+          Version: "2012-10-17"
+          Statement:
+            - Effect: "Allow"
+              Action:
+                - "logs:CreateLogStream"
+                - "logs:PutLogEvents"
+                - "cloudwatch:PutMetricData"
+              Resource: "*"
+        PolicyName: "CloudWatchPolicy"
